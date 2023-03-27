@@ -1,14 +1,53 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <utility>
 
 struct D{
-   D() { std::cout << "D()" << std::endl; }
-   D(D const &) { std::cout << "D(D const &)" << std::endl; }
-   D(D&&) noexcept { std::cout << "D(D&&)" << std::endl; }
-   ~D(){ std::cout << "~D()" << std::endl; }
-   D &operator=(D const &) { std::cout << "operator=(D & const)" << std::endl; return *this;}
-   D &operator=(D &&) noexcept { std::cout << "operator=(D &&)" << std::endl; return *this;}
+   std::string name = "";
+
+   D() { 
+      std::cout << name << ": D()" << std::endl; 
+   }
+
+   D(std::string_view const name) : name(name) { 
+      std::cout << name << ": D(std::string_view const name)" << std::endl; 
+   }
+
+   D(D const & other) : name(other.name) 
+   { 
+      std::cout << name << ": D(D const &)" << std::endl; 
+   }
+
+   D(D&& other) noexcept : name(std::exchange(other.name, "MOVED " + other.name)) 
+   { 
+      std::cout << name << ": D(D&&)" << std::endl; 
+   }
+
+   ~D(){ 
+      std::cout << name << ": ~D()" << std::endl; 
+   }
+
+   D &operator=(D const & other) 
+   { 
+      if(&other == this){
+         return *this;
+      }
+
+      name = other.name;
+      std::cout << name << ": operator=(D & const)" << std::endl; 
+      return *this;
+   }
+   
+   D &operator=(D && other) noexcept { 
+      if(&other == this){
+         return *this;
+      }
+      
+      name = std::exchange(other.name, "MOVED " + other.name);
+      std::cout << name << ": operator=(D &&)" << std::endl;
+      return *this;
+   }
 };
 
 struct S_Member {
@@ -20,6 +59,12 @@ struct S_Const_Member {
 };
 
 int main(int argc, char **argv){
+   {
+      D d("move obj");
+      D d_move = std::move(d); 
+   }
+   std::cout << std::endl;
+
    std::cout << ">>>>>>>> S_Member >>>>>>>>" << std::endl;
    {
       std::vector<S_Member> s_members;
