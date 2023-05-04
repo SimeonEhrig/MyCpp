@@ -15,3 +15,12 @@ set_target_properties(2Ddata PROPERTIES
   CXX_STANDARD 23
 )
 target_link_libraries(2Ddata PRIVATE std::mdspan utils)
+
+add_executable(2DdataPadding)
+target_sources(2DdataPadding
+   PRIVATE
+   2DdataPadding.cpp)
+set_target_properties(2DdataPadding PROPERTIES
+  CXX_STANDARD 23
+)
+target_link_libraries(2DdataPadding PRIVATE std::mdspan utils)
