@@ -77,11 +77,22 @@ void fullyLengthStatic2DPrint() {
   //        depth. If you want to define a padding without padding space in
   //        memory, the values would be {y_size * x_size, x_size, 1}
   std::array<std::size_t, 2> padding{x_size + x_padding, 1};
-  stdex::layout_stride::mapping<FullyStatic2DExtends> mapping{
-      FullyStatic2DExtends{}, padding};
+  stdex::layout_stride::mapping<FullyStatic2DExtends> mp{FullyStatic2DExtends{},
+                                                         padding};
+
   stdex::mdspan<Point2D, FullyStatic2DExtends, stdex::layout_stride> m(
-      data.data(), mapping);
+      data.data(), mp);
+
   print_extend(m);
+  std::cout << "\n";
+
+  std::cout << "mp.is_always_unique(): " << std::boolalpha
+            << mp.is_always_unique() << "\n";
+  std::cout << "mp.is_always_strided(): " << std::boolalpha
+            << mp.is_always_strided() << "\n";
+  std::cout << "mp.is_always_exhaustive(): " << std::boolalpha
+            << mp.is_always_exhaustive() << "\n";
+  std::cout << "\n";
 
   for (auto y = 0; y < m.static_extent(0); ++y) {
     for (auto x = 0; x < m.static_extent(1); ++x) {

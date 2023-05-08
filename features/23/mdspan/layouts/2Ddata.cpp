@@ -137,9 +137,19 @@ void fullyLengthDynamic2DPrint(std::size_t y_size, std::size_t x_size) {
 
   using mapping = TLayout::template mapping<DynamicStatic2DExtends>;
 
-  stdex::mdspan m(data.data(), mapping{DynamicStatic2DExtends{y_size, x_size}});
+  mapping mp{DynamicStatic2DExtends{y_size, x_size}};
+
+  stdex::mdspan m(data.data(), mp);
 
   print_extend(m);
+  std::cout << "\n";
+
+  std::cout << "mp.is_always_unique(): " << std::boolalpha
+            << mp.is_always_unique() << "\n";
+  std::cout << "mp.is_always_strided(): " << std::boolalpha
+            << mp.is_always_strided() << "\n";
+  std::cout << "mp.is_always_exhaustive(): " << std::boolalpha
+            << mp.is_always_exhaustive() << "\n";
   std::cout << "\n";
 
   if constexpr (std::is_same_v<TLayout, stdex::layout_right>) {
