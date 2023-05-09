@@ -15,7 +15,7 @@ Index = xn ( D{n-1} * ... * D1  ) + x{n-1} ( D{n-2} * ... * D1 ) + ... + x2 * D1
 
 `n` is the highest dimensions and `1` the smallest.
 
-## transform linear index to multi dimensional index
+## transform linear index to multi dimensional index with modulo (version 1)
 
 The formula to calculate the multi dimensional index from a linear index is:
 
@@ -35,6 +35,21 @@ x2 = ( ( Index - x1 ) / D1 ) %  D2;
 x3 = ( ( Index - x2 * D1 - x1 ) / (D1 * D2) ) % D3; 
 x4 = ( ( Index - x3 * D2 * D1 - x2 * D1 - x1 ) / (D1 * D2 * D3) ) % D4;
 ```
+
+## transform linear index to multi dimensional index with C++ integer division (version 2)
+
+This method uses the behavior of C++, that integer division is always rounded down.
+
+```
+stepLenght{n} = D{n-1} * ... * D1
+stepLenght{1} = 1
+
+x{n} = Index / stepLenght{n}
+x{n-1} = (Index - x{n} * stepLenght{n}) / stepLenght{n-1}
+x{n-k} = (Index - (x{n} * stepLenght{n}) - ... - (x{n-k+1} * stepLenght{n-k+1})) / stepLenght{n-k}
+x{1} = Index
+```
+
 
 # Implementation
 

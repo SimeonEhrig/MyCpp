@@ -50,6 +50,18 @@ public:
       return total_elements;
    }
 
+   bool operator==(NDim const & other) const{
+      if(get_dim() != other.get_dim()){
+         return false;
+      }
+
+      for(auto dim = 1; dim <= get_dim(); ++dim){
+         if (at(dim) != other.at(dim)){
+            return false;
+         }
+      }
+      return true;
+   }
 };
 
 std::ostream & operator<<(std::ostream & os, NDim const & nDim){
@@ -62,6 +74,10 @@ std::ostream & operator<<(std::ostream & os, NDim const & nDim){
    }
    os << "]";
    return os;
+}
+
+std::ostream & operator<<(std::ostream & os, std::pair<unsigned int, NDim> const & linearNDim){
+   return os << "<" << linearNDim.first << ", " << linearNDim.second << ">";
 }
 
 void print_mapping(std::vector<std::pair<NDim, unsigned int>> const & mapping){
@@ -182,7 +198,7 @@ std::vector<std::pair<NDim, unsigned int>> to1D(NDim nDdimsize){
 // ### transform linear index -> multi dimensional index
 // ################################################################################################
 
-// The formula to calculate the multi dimensional index from a linear index is:
+// The formula to calculate the multi dimensional index from a linear index using modulo is:
 // xn = ( ( Index - Index( x1, ..., x{n-1} ) ) / Product( D1, ..., D{N-1} ) ) % Dn
 // With following cases:
 // x1 = Index % D1;
@@ -261,6 +277,66 @@ std::vector<std::pair<unsigned int, NDim>> toND(NDim nDdimsize){
    return mapping;
 }
 
+// The formula to calculate the multi dimensional index from a linear index using integer division is:
+// stepLenght{n} = D{n-1} * ... * D1
+// stepLenght{1} = 1
+
+// x{n} = Index / stepLenght{n}
+// x{n-1} = (Index - x{n} * stepLenght{n}) / stepLenght{n-1}
+// x{n-k} = (Index - (x{n} * stepLenght{n}) - ... - (x{n-k+1} * stepLenght{n-k+1})) / stepLenght{n-k}
+// x{1} = Index
+
+// 1. calculate the step size
+// 2. calculate the postion of the current dimension
+// 3. reduce linear index
+// 4. call function again with reduced linear index and current_dim-1
+
+/// @brief Calculate the index position of each dimension from a linear index.
+/// @param linear_index The linear (rest) index of the dimension.
+/// @param nDdimsize Size of each dimension.
+/// @param nDposition Stores the index of each in index here.
+/// @param current_dim The current dimension.
+void get_multi_index_v2_impl(unsigned int linear_index, NDim const & nDdimsize, NDim & nDposition, unsigned int const current_dim){
+   unsigned int stepLength = 1;
+   if (current_dim > 0){
+      for(auto dim = current_dim - 1; dim >= 1; --dim){
+         stepLength *= nDdimsize.at(dim);
+      }
+
+      auto pos = linear_index / stepLength;
+
+      nDposition.at(current_dim) = pos;
+
+      auto const new_linear_index = linear_index - pos * stepLength;
+      get_multi_index_v2_impl(new_linear_index, nDdimsize, nDposition, current_dim-1);
+   }
+}
+
+/// @brief Calculate the multi dimensional index from a linear index.
+/// @param linear_index The linear index
+/// @param nDdimsize Size of each dimension.
+/// @return multi dimensional index
+NDim get_multi_index_v2(unsigned int linear_index, NDim const & nDdimsize){
+   NDim nDposition(nDdimsize.get_dim(), 0);
+   get_multi_index_v2_impl(linear_index, nDdimsize, nDposition , nDdimsize.get_dim());
+   return nDposition;
+}
+
+/// @brief Maps all possible linear index to multi dimensional indices in the index room of nDdimsize.
+/// @param nDdimsize Dimension sizes of the multi dimensional index.
+/// @return Mapping mappings from linear coordinate to multi dimensional coordinate.
+std::vector<std::pair<unsigned int, NDim>> toND_v2(NDim nDdimsize){
+   unsigned int total_elements = nDdimsize.get_total_elements();
+
+   std::vector<std::pair<unsigned int, NDim>> mapping(total_elements);
+
+   for(unsigned int i = 0; i < total_elements; ++i){
+      mapping[i] = std::pair(i, get_multi_index_v2(i, nDdimsize));
+   }
+   
+   return mapping;
+}
+
 int main(int argc, char **argv){
    auto nToLin_1Dto1D = to1D({2});
    print_mapping(nToLin_1Dto1D);
@@ -280,6 +356,30 @@ int main(int argc, char **argv){
    std::cout << std::endl;
    auto linToN_1Dto4D = toND({2, 4, 3, 5});
    print_mapping(linToN_1Dto4D);
+
+   std::cout << std::endl;
+   auto linToN_1Dto4D_v2 = toND_v2({2, 4, 3, 5});
+   print_mapping(linToN_1Dto4D_v2);
+
+   if(linToN_1Dto4D.size() != linToN_1Dto4D_v2.size()){
+      std::cout << "linToN_1Dto4D and linToN_1Dto4Dv2 has not the same size" << std::endl;
+      return 1;
+   }
+
+   bool equal = true;
+   for(auto index = 0; index < linToN_1Dto4D.size(); ++index ){
+      if (linToN_1Dto4D[index] != linToN_1Dto4D_v2[index]){
+         equal = false;
+         std::cout << "linToN_1Dto4D[" << index << "] != linToN_1Dto4D_v2[" << index << "]" << std::endl;
+         std::cout << linToN_1Dto4D[index] << "!= " << linToN_1Dto4D_v2[index] << std::endl;
+      }
+   }
+
+   if(equal){
+      std::cout << "linToN_1Dto4D and linToN_1Dto4Dv2 are equal" << std::endl;
+   } else {
+      std::cout << "linToN_1Dto4D and linToN_1Dto4Dv2 are not equal" << std::endl;
+   }
 
    return 0;
 }
