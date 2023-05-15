@@ -27,9 +27,22 @@ if(ENABLE_BENCH)
   set_target_properties(${_BENCH_TARGET} PROPERTIES
     CXX_STANDARD 17
   )
-  target_include_directories(${_BENCH_TARGET} PRIVATE include)
-  target_link_libraries(${_BENCH_TARGET}
+  target_include_directories(${_BENCH_TARGET}
+    PRIVATE
+    include
+    bench)
+
+  set(_BASELINE_FULLY_DYNAMIC_TARGET baseline_fully_dynamic_target)
+
+  add_library(${_BASELINE_FULLY_DYNAMIC_TARGET} SHARED bench/baselineDynamic.cpp)
+  target_link_libraries(${_BASELINE_FULLY_DYNAMIC_TARGET}
     PRIVATE
     std::mdspan
     benchmark::benchmark)
+
+  target_link_libraries(${_BENCH_TARGET}
+    PRIVATE
+    std::mdspan
+    benchmark::benchmark
+    ${_BASELINE_FULLY_DYNAMIC_TARGET})
 endif()
