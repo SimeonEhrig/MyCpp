@@ -20,14 +20,18 @@
 /// x{n-k} = (Index - (x{n} * stepLenght{n}) - ... - (x{n-k+1} *
 /// stepLenght{n-k+1})) / stepLenght{n-k} x{1} = Index
 ///
+/// @tparam TElement element type of the mdspan
 /// @tparam TExtents extend of the mdspan
 /// @tparam TLayoutPolicy mapping of the mdspan
 /// @tparam TAccessorPolicy accessor of the mdspan
-template <typename TExtents, typename TLayoutPolicy, typename TAccessorPolicy>
+/// @tparam IndexCalculationVersion Implementation version of index calculation
+/// algorithm. Can be 1 or 2.
+template <typename TElement, typename TExtents, typename TLayoutPolicy,
+          typename TAccessorPolicy, int IndexCalculationVersion = 2>
 class MdSpanLinearAdapter {
 private:
-  using mdspan_type =
-      std::experimental::mdspan<TExtents, TLayoutPolicy, TAccessorPolicy>;
+  using mdspan_type = std::experimental::mdspan<TElement, TExtents,
+                                                TLayoutPolicy, TAccessorPolicy>;
   // type of the underlying data structure
   using element_type = typename mdspan_type::element_type;
   // index type
@@ -79,6 +83,38 @@ private:
     }
   }
 
+  template <index_type current_rank, typename TTupel>
+  auto calculate_extend_index_impl_v2(index_type const index,
+                                      TTupel const multi_index_before) {
+    index_type const stepSize = calculate_step_size<current_rank>();
+    index_type current_multi_index = index / stepSize;
+    auto const multi_index =
+        std::tuple_cat(multi_index_before, std::tuple{current_multi_index});
+
+    if constexpr (current_rank == (mdspan_type::rank() - 1)) {
+      return multi_index;
+    } else {
+      return calculate_extend_index_impl_v2<current_rank + 1>(
+          index - (current_multi_index * stepSize), multi_index);
+    }
+  }
+
+  /// @brief Creates of tuple of index positions for each extend.
+  /// @param index Linear index, which is mapped to the multi dimensional index.
+  /// @return Tupel with index positions.
+  auto calculate_extend_index_impl_v2(index_type const index) {
+    index_type const stepSize = calculate_step_size<0>();
+    auto const current_multi_index = index / stepSize;
+    std::tuple<index_type> multi_index = {current_multi_index};
+
+    if constexpr ((mdspan_type::rank() - 1) == 0) {
+      return multi_index;
+    } else {
+      return calculate_extend_index_impl_v2<1>(
+          index - (current_multi_index * stepSize), multi_index);
+    }
+  }
+
   /// @brief Calculate the index position for rank `final_rank`.
   /// @tparam final_rank Rank of the search index.
   /// @param index Linear index.
@@ -99,6 +135,23 @@ private:
 #endif
   }
 
+  auto &access_linear_index_impl_v2(index_type const index) {
+#if MDSPAN_USE_BRACKET_OPERATOR
+    return std::apply(
+        [this](auto &&...indices) -> element_type & {
+          return m_mdspan[indices...];
+        },
+        calculate_extend_index_impl_v2(index));
+
+#else
+    return std::apply(
+        [this](auto &&...indices) -> element_type & {
+          return m_mdspan(indices...);
+        },
+        calculate_extend_index_impl_v2(index));
+#endif
+  }
+
 public:
   MdSpanLinearAdapter(mdspan_type mdspan) : m_mdspan(mdspan) {}
 
@@ -106,13 +159,27 @@ public:
   /// @param index Linear index.
   /// @return element at postion index
   element_type &operator[](index_type const index) const {
-    return access_linear_index_impl(
-        index, std::make_index_sequence<mdspan_type::rank()>{});
+    static_assert((IndexCalculationVersion > 0 && IndexCalculationVersion < 3),
+                  "Unknown IndexCalculationVersion");
+
+    if constexpr (IndexCalculationVersion == 1) {
+      return access_linear_index_impl(
+          index, std::make_index_sequence<mdspan_type::rank()>{});
+    } else if (IndexCalculationVersion == 2) {
+      return access_linear_index_impl_v2(index);
+    }
   }
 
   element_type &operator[](index_type const index) {
-    return access_linear_index_impl(
-        index, std::make_index_sequence<mdspan_type::rank()>{});
+    static_assert((IndexCalculationVersion > 0 && IndexCalculationVersion < 3),
+                  "Unknown IndexCalculationVersion");
+
+    if constexpr (IndexCalculationVersion == 1) {
+      return access_linear_index_impl(
+          index, std::make_index_sequence<mdspan_type::rank()>{});
+    } else if (IndexCalculationVersion == 2) {
+      return access_linear_index_impl_v2(index);
+    }
   }
 
   /// @brief Multiplies the extends of all dimensions.
@@ -240,6 +307,40 @@ int main(int argc, char **argv) {
   }
   if (index_check_4d) {
     std::cout << "indices matches\n";
+  }
+
+  std::cout << "\n";
+
+  std::cout << "###########################################################\n"
+            << "compare implementation v1 with v2 with 4D data struct\n"
+            << "###########################################################\n";
+  // because the layout of the mdspan is right, it iterate order will be the
+  // same like iota() is writing the numbers in the 1D memory.
+  std::cout << "\n";
+
+  using md_data4D_type = decltype(md_data4D);
+
+  MdSpanLinearAdapter<md_data4D_type::element_type,
+                      md_data4D_type::extents_type, md_data4D_type::layout_type,
+                      md_data4D_type::accessor_type, 1>
+      adapter_v1(md_data4D);
+
+  MdSpanLinearAdapter<md_data4D_type::element_type,
+                      md_data4D_type::extents_type, md_data4D_type::layout_type,
+                      md_data4D_type::accessor_type, 2>
+      adapter_v2(md_data4D);
+
+  bool index_check_4d_impl_version = true;
+  for (auto i = 0; i < total_size; ++i) {
+    if (adapter_v1[i] != adapter_v2[i]) {
+      index_check_4d_impl_version = false;
+      std::cout << adapter_v1[i] << " != " << adapter_v2[i] << "\n";
+    }
+  }
+  if (index_check_4d_impl_version) {
+    std::cout
+        << "The implementations of linear index calculation v1 and v2 are "
+           "equal\n";
   }
 
   std::cout << "\n";
