@@ -1,3 +1,4 @@
 # ignore CMake build and install folder 
 build
 install
+.vscode
