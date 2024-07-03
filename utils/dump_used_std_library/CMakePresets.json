@@ -1,0 +1,166 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "general",
+            "description": "general settings",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "gcc",
+            "description": "compile with gcc",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
+            }
+        },
+        {
+            "name": "clang-libstdcpp",
+            "description": "compile with clang with libstdc++ (gcc shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "clang-libcpp",
+            "description": "compile with clang with libc++ (llvm shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "LIBCPP": "ON"
+            }
+        },
+        {
+            "name": "nvcc-gcc",
+            "description": "compile with nvcc and gcc host compiler",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_CUDA_COMPILER": "nvcc",
+                "CUDA": "ON"
+            }
+        },
+        {
+            "name": "nvcc-clang-libstdcpp",
+            "description": "compile with nvcc, clang host compiler and libstdc++ (gcc shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CUDA_COMPILER": "nvcc",
+                "CUDA": "ON"
+            }
+        },
+        {
+            "name": "nvcc-clang-libcpp",
+            "description": "compile with nvcc, clang host compiler and libc++ (llvm shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CUDA_COMPILER": "nvcc",
+                "CUDA": "ON",
+                "LIBCPP": "ON"
+            }
+        },
+        {
+            "name": "clang-cuda-libstdcpp",
+            "description": "compile cuda code with clang and libstdc++ (gcc shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CUDA_COMPILER": "clang++",
+                "CUDA": "ON"
+            }
+        },
+        {
+            "name": "clang-cuda-libcpp",
+            "description": "compile cuda code with clang and libc++ (llvm shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CUDA_COMPILER": "clang++",
+                "CUDA": "ON",
+                "LIBCPP": "ON"
+            }
+        },
+        {
+            "name": "hip-libstdcpp",
+            "description": "compile hip code with clang and libstdc++ (gcc shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "HIP": "ON"
+            }
+        },
+        {
+            "name": "hip-libcpp",
+            "description": "compile hip code with clang and libc++ (llvm shipped)",
+            "inherits": "general",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_CUDA_COMPILER": "clang++",
+                "HIP": "ON",
+                "LIBCPP": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "gcc",
+            "configurePreset": "gcc"
+        },
+        {
+            "name": "clang-libstdcpp",
+            "configurePreset": "clang-libstdcpp"
+        },
+        {
+            "name": "clang-libcpp",
+            "configurePreset": "clang-libcpp"
+        },
+        {
+            "name": "nvcc-gcc",
+            "configurePreset": "nvcc-gcc"
+        },
+        {
+            "name": "nvcc-clang-libstdcpp",
+            "configurePreset": "nvcc-clang-libstdcpp"
+        },
+        {
+            "name": "nvcc-clang-libcpp",
+            "configurePreset": "nvcc-clang-libcpp"
+        },
+        {
+            "name": "clang-cuda-libstdcpp",
+            "configurePreset": "clang-cuda-libstdcpp"
+        },
+        {
+            "name": "clang-cuda-libcpp",
+            "configurePreset": "clang-cuda-libcpp"
+        },
+        {
+            "name": "hip-libstdcpp",
+            "configurePreset": "hip-libstdcpp"
+        },
+        {
+            "name": "hip-libcpp",
+            "configurePreset": "hip-libcpp"
+        }
+    ]
+}
